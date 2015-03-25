@@ -10,7 +10,7 @@ use internal::bitmap::{Bitmap, new_bitmap_ref, clone_bitmap};
 use internal::bitmap_like::BitmapLike;
 use internal::color::PixelFormat;
 use internal::core::{Core, dummy_target};
-use internal::events::{EventSource, new_event_source_ref};
+use internal::events::{EventGenerator, EventSource, new_event_source_ref};
 use rust_util::Flag;
 
 use ffi::*;
@@ -273,11 +273,6 @@ impl Display
 		clone_bitmap(bmp.get_allegro_bitmap())
 	}
 
-	pub fn get_event_source<'l>(&'l self) -> &'l EventSource
-	{
-		&self.event_source
-	}
-
 	pub fn get_allegro_display(&self) -> *mut ALLEGRO_DISPLAY
 	{
 		self.allegro_display
@@ -336,6 +331,14 @@ impl Display
 		{
 			al_is_bitmap_drawing_held() != 0
 		}
+	}
+}
+
+impl EventGenerator for Display
+{
+	fn get_event_source<'l>(&'l self) -> &'l EventSource
+	{
+		&self.event_source
 	}
 }
 

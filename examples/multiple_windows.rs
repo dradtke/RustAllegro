@@ -16,7 +16,7 @@ use std::env;
 use allegro::*;
 use allegro_font::*;
 
-fn other_window(mut core: Core, sender: mpsc::SyncSender<()>, init_only: bool)
+fn other_window(core: Core, sender: mpsc::SyncSender<()>, init_only: bool)
 {
 	let font_addon = FontAddon::init(&core).unwrap();
 
@@ -31,9 +31,9 @@ fn other_window(mut core: Core, sender: mpsc::SyncSender<()>, init_only: bool)
 	let timer = Timer::new(&core, 1.0 / 60.0).unwrap();
 
 	let q = EventQueue::new(&core).unwrap();
-	q.register_event_source(disp.get_event_source());
-	q.register_event_source(core.get_keyboard_event_source());
-	q.register_event_source(timer.get_event_source());
+	q.register_event_source(&disp);
+	q.register_event_source(&core.keyboard);
+	q.register_event_source(&timer);
 
 	let font = Font::new_builtin(&font_addon).unwrap();
 
@@ -118,9 +118,9 @@ allegro_main!
 	let timer = Timer::new(&core, 1.0 / 60.0).unwrap();
 
 	let q = EventQueue::new(&core).unwrap();
-	q.register_event_source(disp.get_event_source());
-	q.register_event_source(core.get_keyboard_event_source());
-	q.register_event_source(timer.get_event_source());
+	q.register_event_source(&disp);
+	q.register_event_source(&core.keyboard);
+	q.register_event_source(&timer);
 
 	let font = Font::new_builtin(&font_addon).unwrap();
 

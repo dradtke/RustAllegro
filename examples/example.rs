@@ -3,6 +3,7 @@
 #![feature(collections)]
 #![feature(core)]
 #![feature(start)]
+#![feature(path_ext)]
 
 #[macro_use]
 extern crate allegro;
@@ -14,6 +15,8 @@ extern crate getopts;
 
 use getopts::*;
 use std::env;
+use std::fs::PathExt;
+use std::path::Path;
 
 use allegro::*;
 use allegro_image::*;
@@ -24,6 +27,17 @@ use allegro_primitives::*;
 allegro_main!
 {
 	let args = env::args().collect::<Vec<_>>();
+
+    // If the working directory is the one where the executable was built, move up
+    // a couple directories first so that paths resolve correctly. This makes the
+    // example work even when double-clicked from a file browser.
+    if let Some(exe) = Path::new(&args[0]).file_name() {
+        if Path::new(exe).exists() {
+            if let Err(e) = env::set_current_dir("../..") {
+                panic!("{}", e);
+            }
+        }
+    }
 
 	let opts = vec![
 		optflag("i", "init-only", "only initialize Allegro, don't do anything else")
@@ -53,10 +67,10 @@ allegro_main!
 	let timer = Timer::new(&core, 1.0 / 60.0).unwrap();
 
 	let q = EventQueue::new(&core).unwrap();
-	q.register_event_source(disp.get_event_source());
-	q.register_event_source(core.get_keyboard_event_source());
-	q.register_event_source(core.get_mouse_event_source());
-	q.register_event_source(timer.get_event_source());
+	q.register_event_source(&disp);
+	q.register_event_source(&core.keyboard);
+	q.register_event_source(&core.mouse);
+	q.register_event_source(&timer);
 
 	let bmp = Bitmap::new(&core, 256, 256).unwrap();
 

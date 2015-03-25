@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use ffi::*;
 
-use internal::events::{EventSource, new_event_source_ref};
+use internal::events::{EventGenerator, EventSource, new_event_source_ref};
 use internal::keycodes::{KeyCode, KeyModifier};
 use internal::display::{Display, DisplayOption, DisplayOptionImportance, DisplayFlags};
 use internal::color::{Color, PixelFormat};
@@ -40,11 +40,41 @@ pub mod external
 
 pub static mut dummy_target: *mut ALLEGRO_BITMAP = 0 as *mut ALLEGRO_BITMAP;
 
+pub struct KeyboardEventGenerator(Option<EventSource>);
+
+impl EventGenerator for KeyboardEventGenerator
+{
+    fn get_event_source<'l>(&'l self) -> &'l EventSource
+    {
+        self.0.as_ref().expect("Keyboard not installed.")
+    }
+}
+
+pub struct MouseEventGenerator(Option<EventSource>);
+
+impl EventGenerator for MouseEventGenerator
+{
+    fn get_event_source<'l>(&'l self) -> &'l EventSource
+    {
+        self.0.as_ref().expect("Mouse not installed.")
+    }
+}
+
+pub struct JoystickEventGenerator(Option<EventSource>);
+
+impl EventGenerator for JoystickEventGenerator
+{
+    fn get_event_source<'l>(&'l self) -> &'l EventSource
+    {
+        self.0.as_ref().expect("Joystick not installed.")
+    }
+}
+
 pub struct Core
 {
-	keyboard_event_source: Option<EventSource>,
-	mouse_event_source: Option<EventSource>,
-	joystick_event_source: Option<EventSource>,
+    pub keyboard: KeyboardEventGenerator,
+    pub mouse: MouseEventGenerator,
+    pub joystick: JoystickEventGenerator,
 	mutex: Arc<Mutex<()>>,
 }
 
@@ -78,9 +108,9 @@ impl Core
 						(
 							Core
 							{
-								keyboard_event_source: None,
-								mouse_event_source: None,
-								joystick_event_source: None,
+								keyboard: KeyboardEventGenerator(None),
+								mouse: MouseEventGenerator(None),
+								joystick: JoystickEventGenerator(None),
 								mutex: Arc::new(Mutex::new(())),
 							}
 						)
@@ -110,9 +140,9 @@ impl Core
 		{
 			thread_proc(Core
 			{
-				keyboard_event_source: None,
-				mouse_event_source: None,
-				joystick_event_source: None,
+                keyboard: KeyboardEventGenerator(None),
+                mouse: MouseEventGenerator(None),
+                joystick: JoystickEventGenerator(None),
 				mutex: mutex,
 			});
 		});
@@ -163,12 +193,13 @@ impl Core
 		}
 	}
 
-	pub fn install_keyboard(&self) -> Result<(), ()>
+	pub fn install_keyboard(&mut self) -> Result<(), ()>
 	{
 		unsafe
 		{
 			if al_install_keyboard() != 0
 			{
+                self.keyboard.0 = Some(new_event_source_ref(al_get_keyboard_event_source()));
 				Ok(())
 			}
 			else
@@ -184,19 +215,6 @@ impl Core
 		{
 			al_is_keyboard_installed() != 0
 		}
-	}
-
-	pub fn get_keyboard_event_source(&mut self) -> &EventSource
-	{
-		if self.keyboard_event_source.is_none() && self.is_keyboard_installed()
-		{
-			unsafe
-			{
-				self.keyboard_event_source = Some(new_event_source_ref(al_get_keyboard_event_source()));
-			}
-		}
-
-		self.keyboard_event_source.as_ref().expect("Keyboard not installed")
 	}
 
 	pub fn set_keyboard_leds(&self, leds: KeyModifier) -> Result<(), ()>
@@ -224,12 +242,13 @@ impl Core
 		}
 	}
 
-	pub fn install_mouse(&self) -> Result<(), ()>
+	pub fn install_mouse(&mut self) -> Result<(), ()>
 	{
 		unsafe
 		{
 			if al_install_mouse() != 0
 			{
+				self.mouse.0 = Some(new_event_source_ref(al_get_mouse_event_source()));
 				Ok(())
 			}
 			else
@@ -247,25 +266,13 @@ impl Core
 		}
 	}
 
-	pub fn get_mouse_event_source(&mut self) -> &EventSource
-	{
-		if self.mouse_event_source.is_none() && self.is_mouse_installed()
-		{
-			unsafe
-			{
-				self.mouse_event_source = Some(new_event_source_ref(al_get_mouse_event_source()));
-			}
-		}
-
-		self.mouse_event_source.as_ref().expect("Mouse not installed")
-	}
-
-	pub fn install_joystick(&self) -> Result<(), ()>
+	pub fn install_joystick(&mut self) -> Result<(), ()>
 	{
 		unsafe
 		{
 			if al_install_joystick() != 0
 			{
+				self.joystick.0 = Some(new_event_source_ref(al_get_joystick_event_source()));
 				Ok(())
 			}
 			else
@@ -281,19 +288,6 @@ impl Core
 		{
 			al_is_joystick_installed() != 0
 		}
-	}
-
-	pub fn get_joystick_event_source(&mut self) -> &EventSource
-	{
-		if self.joystick_event_source.is_none() && self.is_joystick_installed()
-		{
-			unsafe
-			{
-				self.joystick_event_source = Some(new_event_source_ref(al_get_joystick_event_source()));
-			}
-		}
-
-		self.joystick_event_source.as_ref().expect("Joystick not installed")
 	}
 
 	pub fn reconfigure_joysticks(&self) -> Result<(), ()>

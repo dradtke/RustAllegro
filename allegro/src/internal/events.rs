@@ -15,7 +15,7 @@ pub use self::Event::*;
 
 pub mod external
 {
-	pub use super::{Event, EventQueue, EventSource};
+	pub use super::{Event, EventQueue, EventSource, EventGenerator};
 	pub use super::Event::*;
 }
 
@@ -44,11 +44,11 @@ impl EventQueue
 		}
 	}
 
-	pub fn register_event_source(&self, src: &EventSource)
+	pub fn register_event_source<T: EventGenerator>(&self, src: &T)
 	{
 		unsafe
 		{
-			al_register_event_source(self.allegro_queue, src.allegro_source);
+			al_register_event_source(self.allegro_queue, src.get_event_source().allegro_source);
 		}
 	}
 
@@ -169,6 +169,19 @@ impl EventSource
 	{
 		self.allegro_source
 	}
+}
+
+pub trait EventGenerator
+{
+    fn get_event_source<'l>(&'l self) -> &'l EventSource;
+}
+
+impl EventGenerator for EventSource
+{
+    fn get_event_source<'l>(&'l self) -> &'l Self
+    {
+        self
+    }
 }
 
 #[derive(Copy)]

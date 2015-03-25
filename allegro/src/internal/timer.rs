@@ -6,7 +6,7 @@ use libc::*;
 use std::mem;
 use ffi::*;
 
-use internal::events::{EventSource, new_event_source_ref};
+use internal::events::{EventGenerator, EventSource, new_event_source_ref};
 use internal::core::Core;
 
 pub struct Timer
@@ -96,8 +96,11 @@ impl Timer
 			al_add_timer_count(self.allegro_timer, diff as int64_t);
 		}
 	}
+}
 
-	pub fn get_event_source<'l>(&'l self) -> &'l EventSource
+impl EventGenerator for Timer
+{
+	fn get_event_source<'l>(&'l self) -> &'l EventSource
 	{
 		&self.event_source
 	}

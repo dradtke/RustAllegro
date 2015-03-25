@@ -76,9 +76,9 @@ allegro_main!
 	let timer = Timer::new(&core, 1.0 / 60.0).unwrap();
 
 	let q = EventQueue::new(&core).unwrap();
-	q.register_event_source(disp.get_event_source());
-	q.register_event_source(core.get_keyboard_event_source());
-	q.register_event_source(timer.get_event_source());
+	q.register_event_source(&disp);
+	q.register_event_source(&core.keyboard);
+	q.register_event_source(&timer);
 
 	let callback = Box::new(AudioCallback{ silence: matches.opt_present("silence") }) as Box<PostProcessCallback + Send>;
 	let mut sink = Sink::new(&audio_addon).unwrap();
